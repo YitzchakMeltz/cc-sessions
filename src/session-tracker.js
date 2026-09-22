@@ -40,6 +40,22 @@ function findClaudePid(startPpid) {
 }
 
 /**
+ * Capture the tmux pane this session is running in, if any.
+ *
+ * Only the pane id is recorded here — it is stable for the life of the tmux
+ * server, and `cc-sessions save` resolves it to session/window/pane coordinates
+ * each time, so panes that get renumbered or moved stay correctly addressed.
+ *
+ * @returns A `{ socket, pane }` reference, or null when not running under tmux.
+ */
+function tmuxRef() {
+  const server = process.env.TMUX;
+  const pane = process.env.TMUX_PANE;
+  if (!server || !pane) return null;
+  return { socket: server.split(',')[0] || null, pane };
+}
+
+/**
  * Read and parse the hook payload delivered by Claude Code on stdin.
  *
  * @returns The parsed hook input object, or an empty object on failure.
@@ -68,6 +84,7 @@ fs.writeFileSync(file, JSON.stringify({
   sessionId,
   cwd: input.cwd || process.cwd(),
   claudePid: findClaudePid(process.ppid),
+  tmux: tmuxRef(),
   startedAt: new Date().toISOString(),
 }));
 
